@@ -1,0 +1,8 @@
+# ignore results directories to not up- or download huge amount of bytes
+results/
+
+# ignore data directory with symbolic links
+/02_parse_pdb/data/
+
+# ignore .ipynb_checkpoints
+/bin/.ipynb_checkpoints/

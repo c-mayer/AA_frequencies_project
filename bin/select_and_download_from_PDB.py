@@ -45,6 +45,16 @@ def select_random_subset(all_entries, n_entries):
     logger.info(f"Randomly selected {n_entries} entries from {len(all_entries)} entries.")
     return selected
 
+def select_default_pdbs():
+    """Takes original PDBs for replication and outputs them as list."""
+    default_entries = []
+    with open("./doc/downloaded_default_pdb_files.txt", "r") as f:
+        for line in f:
+            l = line.strip()
+            default_entries.append(l)
+    f.close()
+    logger.info(f"Selected {len(default_entries)} entries from default file for replication.")
+    return default_entries
 
 def download_pdb_files(selected_entries, n_entries):
     """Download pdb files by entry name."""
@@ -56,23 +66,30 @@ def download_pdb_files(selected_entries, n_entries):
         outfile = pdbl.retrieve_pdb_file(entry.strip(), file_format="pdb", pdir="pdb")
         # Some structures may not exist ("Desired structure doesn't exist")
         if os.path.exists(outfile):
-            with open("downloaded_pdb_files.txt", "a") as f:
-                print(entry, file=f)  # structure exists -> write to logfile
+            if args.replication is False:
+                with open("downloaded_pdb_files.txt", "a") as f:
+                    print(entry, file=f)  # structure exists -> write to logfile
             n_downloaded += 1
-    logger.info(f"Downloaded {n_downloaded} pdb files. Entry names saved in 'downloaded_pdb_files.txt'.")
+    logger.info(f"Downloaded {n_downloaded} pdb files. Entry names saved in 'downloaded_pdb_files.txt' if not default.")
 
 
-def main(n_entries):
-    all_entries = get_index_file()
-    selected_entries = select_random_subset(all_entries, n_entries)
-    download_pdb_files(selected_entries, n_entries)
-
+def main(n_entries=0):
+    if args.replication:
+        selected_entries = select_default_pdbs()
+        download_pdb_files(selected_entries, len(selected_entries))
+    else:
+        all_entries = get_index_file()
+        selected_entries = select_random_subset(all_entries, n_entries)
+        download_pdb_files(selected_entries, n_entries)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Randomly select and download a number of PDB entries."
+        description="Randomly select and download a number of PDB entries or download entries of given list."
     )
-    parser.add_argument("n_entries", type=int, metavar="N", help="Number of entries")
+    parser.add_argument("-n", "--n_entries", type=int, metavar="N", help="Number of entries")
+    parser.add_argument("-r", "--replication", action="store_true", default=False, help="Take default proteins for replication")
+    # implements switch to manually chose between replication of original proteins and random protein sample
     args = parser.parse_args()
 
     main(args.n_entries)
+    
