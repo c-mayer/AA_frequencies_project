@@ -5,4 +5,4 @@ results/
 /02_parse_pdb/data/
 
 # ignore .ipynb_checkpoints
-/bin/.ipynb_checkpoints/
+.ipynb_checkpoints/
