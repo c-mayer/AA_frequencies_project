@@ -72,6 +72,42 @@ DSSP_codes = dict(
 protein_letters = Data.CodonTable.IUPACData.protein_letters
 
 
+pdb_list = ['131l']
+
+p = PDBParser()
+for i in pdb_list:
+    structure = p.get_structure(i, 'pdb%s.ent' % i)
+    # use only the first model
+    model = structure[0]
+    # calculate DSSP
+    dssp = DSSP(model, './pdb%s.ent' % i)
+    # extract sequence and secondary structure from the DSSP tuple
+    sequence = ''
+    sec_structure = ''
+    for z in range(len(dssp)):
+        a_key = list(dssp.keys())[z]
+        sequence += dssp[a_key][1]
+        sec_structure += dssp[a_key][2]
+
+    # print extracted sequence and structure
+    print(i)
+    print(sequence)
+    #print(sec_structure)
+    sec_structure = sec_structure.replace('-', 'O')
+    sec_structure = sec_structure.replace('I', 'H')
+    sec_structure = sec_structure.replace('T', 'O')
+    sec_structure = sec_structure.replace('S', 'O')
+    sec_structure = sec_structure.replace('G', 'H')
+    sec_structure = sec_structure.replace('B', 'S')
+    sec_structure = sec_structure.replace('E', 'S')
+    print(sec_structure)
+
+
+# Parsed DSSP file to  dataframe
+parser = parseDSSP('131l.dssp')
+parser.parse()
+pddict = parser.dictTodataframe()
+
 def main(pdb_dir):
     logger.info(f"Directory with PDB files: {pdb_dir}")
 
