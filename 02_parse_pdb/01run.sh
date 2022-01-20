@@ -18,8 +18,23 @@ cd data
 for F in ../../01_*/results/*ent; do
   ln -s $F
 done
-cd ..
 
+# rename symbolic links from .ent to .pdb for further parsing
+for F in *.ent; do
+  mv "$F" "${F/.ent/.pdb}"
+done
+
+cd ../doc
+# symbolic link for pdb structure names
+if [ $* == "default" ]; then
+  rm -f downloaded_pdb_files.txt
+  ln -s ../../01_*/doc/downloaded_default_pdb_files.txt
+  mv downloaded_default_pdb_files.txt downloaded_pdb_files.txt
+else
+  rm -f downloaded_pdb_files.txt
+  ln -s ../../01_*/doc/downloaded_pdb_files.txt
+
+cd ..
 
 ### Perform workflow
 # Parse files and write AA frequency tables
@@ -34,4 +49,3 @@ done
 
 ### Cleanup
 rm -rf tmp
-
