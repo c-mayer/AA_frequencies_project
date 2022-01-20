@@ -29,6 +29,7 @@ def create_pdb_list():
     with open("./doc/downloaded_pdb_files.txt", "r") as f:
         for line in f:
             l = line.strip()
+            l = l.lower()
             pdb_list.append(l)
     f.close()
     return pdb_list

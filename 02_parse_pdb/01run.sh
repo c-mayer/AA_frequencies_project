@@ -25,6 +25,7 @@ for F in *.ent; do
 done
 
 cd ../doc
+
 # symbolic link for pdb structure names
 if [ $* == "default" ]; then
   rm -f downloaded_pdb_files.txt
@@ -33,6 +34,7 @@ if [ $* == "default" ]; then
 else
   rm -f downloaded_pdb_files.txt
   ln -s ../../01_*/doc/downloaded_pdb_files.txt
+fi
 
 cd ..
 
@@ -49,4 +51,3 @@ done
 
 ### Cleanup
 rm -rf tmp
-
