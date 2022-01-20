@@ -2,51 +2,16 @@
 
 """Parse pdb files and determine for each amino acid how often
 it participates in different secondary structures. Write results
-as tsv file.
-
-PDB file format: https://www.wwpdb.org/documentation/file-format-content/format33/sect1.html
-
-A PDB file consists of multiple sections: Title, Primary structure, Heterogen
-section, Secondary structure, Connectivity annotation, etc.
-
-Primary structure section
-https://www.wwpdb.org/documentation/file-format-content/format33/sect3.html
-Contains the sequence of residues in each chain of the macromolecule.
-
-Secondary structure section
-https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html
-Describes helices, sheets, and turns found in protein and polypeptide
-structures. There are three possible records: HELIX, TURN and SHEET
-
-One possibility is to write a parser for PDB files that extracts the
-information from the "secondary structure section". Alternatively,
-we can use tools like DSSP or other secondary structure prediction tools
-to determine the sec. structure from atomic positions. Some possibly
-relevant links:
-- https://www.biostars.org/p/48/
-- https://www.biostars.org/p/65055/
-- https://www.researchgate.net/post/Is_there_a_way_to_search_the_PDB_for_secondary_structure_followed_by_a_sequence_motif
-- https://en.wikipedia.org/wiki/Protein_secondary_structure
-- https://en.wikipedia.org/wiki/DSSP_(hydrogen_bond_estimation_algorithm)
-
-Biopython PDB package:
-- https://biopython.org/docs/latest/api/Bio.PDB.html
-- https://github.com/biopython/biopython/tree/master/Bio/PDB
-- https://biopython.org/wiki/The_Biopython_Structural_Bioinformatics_FAQ
-- http://biopython.org/DIST/docs/tutorial/Tutorial.html#sec182
-
-The Biopython tutorial suggests to use DSSP to obtain secondary structure info, so
-that seems like a reasonable choice.
-"""
+as tsv file."""
 
 import logging
 import argparse
-from collections import Counter, OrderedDict
+#from collections import Counter, OrderedDict
 from pathlib import Path
 from Bio.PDB import PDBParser, DSSP
 from Bio import Data
-from DSSPparser import parseDSSP
 import pandas as pd
+import numpy as np
 
 # Create logger
 logging.basicConfig(
@@ -55,64 +20,87 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)  # create custom logger
 logger.setLevel(logging.DEBUG)  # set level for custom logger
 
-
-# https://biopython.org/wiki/The_Biopython_Structural_Bioinformatics_FAQ
-# "How do I determine secondary structure?" -> DSSP codes
-DSSP_codes = dict(
-    [
-        ("Helix", "H"),
-        ("Bridge", "B"),
-        ("Strand", "E"),
-        ("3-10 Helix", "G"),
-        ("Pi-Helix", "I"),
-        ("Turn", "T"),
-        ("Bend", "S"),
-        ("Other", "-"),
-    ]
-)
-
 protein_letters = Data.CodonTable.IUPACData.protein_letters
 
 
-pdb_list = ['131l']
+def create_pdb_list():
+    """Get list of pdb structure names."""
+    pdb_list = []
+    with open("./doc/downloaded_pdb_files.txt", "r") as f:
+        for line in f:
+            l = line.strip()
+            pdb_list.append(l)
+    f.close()
+    return pdb_list
 
-p = PDBParser()
-for i in pdb_list:
-    structure = p.get_structure(i, 'pdb%s.ent' % i)
-    # use only the first model
-    model = structure[0]
-    # calculate DSSP
-    dssp = DSSP(model, './pdb%s.ent' % i)
-    # extract sequence and secondary structure from the DSSP tuple
-    sequence = ''
-    sec_structure = ''
-    for z in range(len(dssp)):
-        a_key = list(dssp.keys())[z]
-        sequence += dssp[a_key][1]
-        sec_structure += dssp[a_key][2]
+def parse_all_structure_files(pdb_list, pdb_dir):
+    """Parses relevant information of all structures and saves it in a tuple list."""
+    # create dict for grouping in three main structures
+    structure_dict = {'H':'Helix','G':'Helix','I':'Helix','B':'Sheet','E':'Sheet','T':'Other','S':'Other','-':'Other'}
+    # create storage for tuples
+    tuple_list = []
+    # parse data from strucutre files
+    p = PDBParser()
+    for pdb in pdb_list:
+        structure = p.get_structure(pdb, f'./{pdb_dir}/pdb{pdb}.pdb')
+        # use only the first model
+        model = structure[0]
+        # calculate DSSP
+        dssp = DSSP(model, f'./{pdb_dir}/pdb{pdb}.pdb')
+        # parse tuples from DSSP object
+        for i in range (len(dssp)):
+            a_key = dssp[dssp.keys()[i]]
+            tup = (a_key[1], structure_dict[a_key[2]])
+            tuple_list.append(tup)
+    return tuple_list
 
-    # print extracted sequence and structure
-    print(i)
-    print(sequence)
-    #print(sec_structure)
-    sec_structure = sec_structure.replace('-', 'O')
-    sec_structure = sec_structure.replace('I', 'H')
-    sec_structure = sec_structure.replace('T', 'O')
-    sec_structure = sec_structure.replace('S', 'O')
-    sec_structure = sec_structure.replace('G', 'H')
-    sec_structure = sec_structure.replace('B', 'S')
-    sec_structure = sec_structure.replace('E', 'S')
-    print(sec_structure)
+def count_AA_structure_pairs(tuple_list):
+    """Loops (AminoAcid, strucuture) tuples and counts it to matrix."""
+    # create numpy array with zeros
+    count_table = np.zeros(shape=(20,3))
+    count_table
+    # dicts to convert AA and structure to numpy coordinates
+    AA_pos_dict = {'A': 0,'C': 1,'D': 2,'E': 3,'F': 4,'G': 5,'H': 6,'I': 7,'K': 8,'L': 9,'M': 10,'N': 11,'P': 12,'Q': 13,'R': 14,'S': 15,'T': 16,'V': 17,'W': 18,'Y': 19}
+    struct_pos_dict = {'Helix': 0, 'Sheet': 1, 'Other': 2}
+    # adds counting to matrix
+    for i, j in tuple_list: # i is AA, j is structure
+        count_table[AA_pos_dict[i], struct_pos_dict[j]] += 1
+    return count_table
 
+def calc_count_table(count_table):
+    """Takes a count_table as input and calculates percentage for each entry like (value/total_value)*100.
+    Rounds result to 2 decimals."""
+    # calculate sum of count_table
+    sum_AA = np.sum(count_table)
+    # calculate percentage from count
+    freq_table = (count_table / sum_AA) * 100
+    freq_table = np.round(freq_table, decimals=2)
+    return freq_table
 
-# Parsed DSSP file to  dataframe
-parser = parseDSSP('131l.dssp')
-parser.parse()
-pddict = parser.dictTodataframe()
+def add_AA_to_table(freq_table):
+    """Creates AA numpy array and adds it to the input table."""
+    # create column for AA's
+    AA_list = np.array([['A'], ['C'], ['D'], ['E'], ['F'], ['G'], ['H'], ['I'], ['K'], ['L'], ['M'], ['N'], ['P'], ['Q'], ['R'], ['S'], ['T'], ['V'], ['W'], ['Y']])
+    # append column to numpy array
+    AA_freq_table = np.append(AA_list, freq_table, axis=1)
+    return AA_freq_table
+
+def create_dataframe(AA_freq_table):
+    """Takes numpy array with added AA's and converts it to pandasDataFrame with headers."""
+    # create pandasDataframe from numpy array
+    df_freq_table = pd.DataFrame(AA_freq_table, columns=['AA', 'Helix', 'Sheet', 'Other'])
+    return df_freq_table
+
 
 def main(pdb_dir):
     logger.info(f"Directory with PDB files: {pdb_dir}")
-
+    pdb_list = create_pdb_list()
+    tuple_list = parse_all_structure_files(pdb_list, pdb_dir)
+    count_table = count_AA_structure_pairs(tuple_list)
+    freq_table = calc_count_table(count_table)
+    AA_freq_table = add_AA_to_table(freq_table)
+    df_freq_table = create_dataframe(AA_freq_table)
+    df_freq_table.to_csv("./AA_freq_table.tsv", sep="\t", index=False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -127,38 +115,3 @@ if __name__ == "__main__":
 
     main(args.pdb_dir)
 
-pdb_list = ['131l']
-
-p = PDBParser()
-for i in pdb_list:
-    structure = p.get_structure(i, 'pdb%s.ent' % i)
-    # use only the first model
-    model = structure[0]
-    # calculate DSSP
-    dssp = DSSP(model, './pdb%s.ent' % i)
-    # extract sequence and secondary structure from the DSSP tuple
-    sequence = ''
-    sec_structure = ''
-    for z in range(len(dssp)):
-        a_key = list(dssp.keys())[z]
-        sequence += dssp[a_key][1]
-        sec_structure += dssp[a_key][2]
-
-    # print extracted sequence and structure
-    print(i)
-    print(sequence)
-    #print(sec_structure)
-    sec_structure = sec_structure.replace('-', 'O')
-    sec_structure = sec_structure.replace('I', 'H')
-    sec_structure = sec_structure.replace('T', 'O')
-    sec_structure = sec_structure.replace('S', 'O')
-    sec_structure = sec_structure.replace('G', 'H')
-    sec_structure = sec_structure.replace('B', 'S')
-    sec_structure = sec_structure.replace('E', 'S')
-    print(sec_structure)
-
-    
-# Parsed DSSP file to  dataframe
-parser = parseDSSP('131l.dssp')
-parser.parse()
-pddict = parser.dictTodataframe()
