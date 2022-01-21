@@ -7,10 +7,21 @@ set -euo pipefail
 trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
 #set -x  # print each command before executing it
 
-### Variable section
-N_ENTRIES=250 #could be given bash as executable and give n_numbers as argument in command line
+### prove input given
+if [[ "$#" -gt 1 ]]; then
+    echo 'Illegal number of parameters. Please use only one argument ("default" for working with own structure names or integer for number of random PDB structures chosen).
+If no argument is given, 250 random PDB structures will be chosen.'
+    exit
+fi
 
+### Variable section
+N_ENTRIES=250
+
+if [[ $* =~ ^[0-9]+$ ]]; then
+	N_ENTRIES=$1 # gives number of entries as input
+fi
 ### End variable section
+
 
 # Setup
 mkdir -p results

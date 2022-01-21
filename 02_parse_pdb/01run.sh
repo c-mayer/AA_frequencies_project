@@ -2,6 +2,12 @@
 set -euo pipefail
 trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
 
+### prove input given
+if [[ "$#" -gt 1 ]]; then
+    echo 'Illegal number of parameters. Please use only one argument ("default" for working with own structure names or no argument for random PDB structures).'
+    exit
+fi
+
 ### Setup
 mkdir -p data results tmp doc
 rm -rf data/* results/* tmp/*

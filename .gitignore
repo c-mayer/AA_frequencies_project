@@ -6,3 +6,7 @@ results/
 
 # ignore .ipynb_checkpoints
 .ipynb_checkpoints/
+
+# ignore test_misc directory
+#/test_misc/
+
