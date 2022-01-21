@@ -8,5 +8,4 @@ results/
 .ipynb_checkpoints/
 
 # ignore test_misc directory
-#/test_misc/
-
+/test_misc/
