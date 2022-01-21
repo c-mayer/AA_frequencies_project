@@ -3,7 +3,7 @@ Project folder for the Final Project of Softwareentwicklung.<br>
 This Git repository contains a pipeline to perform plot and result table of Amino acid to structure percentage of given or randomly chosen PDB-Structures.
 
 ## Installation
-git clone https://github.com/c-mayer/AA_frequencies_project
+git clone https://github.com/c-mayer/AA_frequencies_project.git
 
 ## Install environment
 sudo install dssp
@@ -26,6 +26,7 @@ We additionally implemented a possibility, to get results of a manually given in
 If both driver scripts are executed with **default** as argument, the given file with structure names will be performed instead of a random structure name sample.<br>
 If not executed with default, random structure names will be performed.<br>
 It is important, to execute **both or none of the two driver scripts with default**. Own structures have to be written into the *downloaded_default_pdb_files.txt* file.<br>
+If the present file *downloaded_default_pdb_files.txt* is not modified, it will reproduce the results that were given as an example.<br>
 
 ## Usage example (for own structure list)
 cd 01_download/doc<br>
