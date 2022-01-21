@@ -6,7 +6,7 @@ as tsv file."""
 
 import logging
 import argparse
-#from collections import Counter, OrderedDict
+#import collections
 from pathlib import Path
 from Bio.PDB import PDBParser, DSSP
 from Bio import Data
@@ -19,8 +19,6 @@ logging.basicConfig(
 )  # configure root logger
 logger = logging.getLogger(__name__)  # create custom logger
 logger.setLevel(logging.DEBUG)  # set level for custom logger
-
-protein_letters = Data.CodonTable.IUPACData.protein_letters
 
 
 def create_pdb_list():
@@ -41,28 +39,36 @@ def parse_all_structure_files(pdb_list, pdb_dir):
     # create storage for tuples
     tuple_list = []
     # parse data from strucutre files
-    p = PDBParser()
+    p = PDBParser()    
     for pdb in pdb_list:
         structure = p.get_structure(pdb, f'./{pdb_dir}/pdb{pdb}.pdb')
+        logger.info(f"Parsing file pdb{pdb}.pdb.")
         # use only the first model
         model = structure[0]
         # calculate DSSP
-        dssp = DSSP(model, f'./{pdb_dir}/pdb{pdb}.pdb')
-        # parse tuples from DSSP object
-        for i in range (len(dssp)):
-            a_key = dssp[dssp.keys()[i]]
-            tup = (a_key[1], structure_dict[a_key[2]])
-            tuple_list.append(tup)
+        try:
+            dssp = DSSP(model, f'./{pdb_dir}/pdb{pdb}.pdb')
+            # parse tuples from DSSP object
+            for i in range (len(dssp)):
+                a_key = dssp[dssp.keys()[i]]
+                tup = (a_key[1], structure_dict[a_key[2]])
+                tuple_list.append(tup)
+        except:
+            pass
     return tuple_list
 
 def count_AA_structure_pairs(tuple_list):
     """Loops (AminoAcid, strucuture) tuples and counts it to matrix."""
     # create numpy array with zeros
-    count_table = np.zeros(shape=(20,3))
+    count_table = np.zeros(shape=(21,3))
     count_table
     # dicts to convert AA and structure to numpy coordinates
-    AA_pos_dict = {'A': 0,'C': 1,'D': 2,'E': 3,'F': 4,'G': 5,'H': 6,'I': 7,'K': 8,'L': 9,'M': 10,'N': 11,'P': 12,'Q': 13,'R': 14,'S': 15,'T': 16,'V': 17,'W': 18,'Y': 19}
     struct_pos_dict = {'Helix': 0, 'Sheet': 1, 'Other': 2}
+    # create pos_dict for AA's
+    protein_letters = Data.CodonTable.IUPACData.protein_letters
+    AA_pos_dict = {}
+    for p, i in enumerate(protein_letters + 'X'):
+        AA_pos_dict[i] = p
     # adds counting to matrix
     for i, j in tuple_list: # i is AA, j is structure
         count_table[AA_pos_dict[i], struct_pos_dict[j]] += 1
@@ -80,8 +86,10 @@ def calc_count_table(count_table):
 
 def add_AA_to_table(freq_table):
     """Creates AA numpy array and adds it to the input table."""
+    # get one-letter code for AA's
+    protein_letters = Data.CodonTable.IUPACData.protein_letters
     # create column for AA's
-    AA_list = np.array([['A'], ['C'], ['D'], ['E'], ['F'], ['G'], ['H'], ['I'], ['K'], ['L'], ['M'], ['N'], ['P'], ['Q'], ['R'], ['S'], ['T'], ['V'], ['W'], ['Y']])
+    AA_list = np.array([[x] for x in protein_letters] + [['X']])
     # append column to numpy array
     AA_freq_table = np.append(AA_list, freq_table, axis=1)
     return AA_freq_table
@@ -115,4 +123,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args.pdb_dir)
-

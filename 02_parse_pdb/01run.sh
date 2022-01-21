@@ -27,7 +27,7 @@ done
 cd ../doc
 
 # symbolic link for pdb structure names
-if [ $* == "default" ]; then
+if [[ $* == "default" ]]; then
   rm -f downloaded_pdb_files.txt
   ln -s ../../01_*/doc/downloaded_default_pdb_files.txt
   mv downloaded_default_pdb_files.txt downloaded_pdb_files.txt
