@@ -18,6 +18,9 @@ chmod +x ./02_parse_pdb/01run.sh<br>
 01_download/01run.sh:<br>
 If no argument is given, 250 random PDB structures will be chosen for calculation. If an integer is given as first argument, the program creates the given number of random PDB structures.<br>
 
+02_parse_pdb/01run.sh:<br>
+If no argument is given, all random created PDB structures are performed. With the argument default, all manually given PDB structures from *downloaded_default_pdb_files.txt* will be performed.<br>
+
 cd 01_download<br>
 bash 01run.sh<br>
 cd ../02_parse_pdb<br>
